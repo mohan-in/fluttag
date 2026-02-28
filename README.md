@@ -1,16 +1,44 @@
-# fluttag
+# Fluttag
 
-A new Flutter project.
+A sleek, intuitive desktop application for Linux built with Flutter, designed to help you easily view and batch-edit ID3 tags for your audio files.
+
+![Fluttag](assets/app_icon.png)
+
+## Features
+
+- **Split-Pane Interface**: Easily navigate your local file system, view your audio files in a comprehensive list, and edit tags in a dedicated side pane.
+- **Batch Editing**: Select multiple audio files at once to quickly apply common tags (such as Artist, Album, Year, Genre, and Album Art) everywhere simultaneously.
+- **Robust Tagging**: Read and write ID3 metadata seamlessly using the `audiotags` package. Supports altering:
+  - Title
+  - Artist
+  - Album
+  - Year
+  - Genre
+  - Track
+  - Comment
+  - Album Cover Art (read/write picture bytes)
+- **Advanced File List**: Sort audio files by various property columns (Name, Track, Year, File Size, etc.) and easily resize columns.
+- **Modern Material 3 Design**: Clean typography, proper state indicators, and native system theming.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+To run the application locally on Linux:
 
-A few resources to get you started if this is your first Flutter project:
+1. Ensure you have the Flutter SDK installed and your Linux desktop environment configured.
+2. Clone this repository and navigate to its root directory.
+3. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+4. Run the app:
+   ```bash
+   flutter run -d linux
+   ```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Build for Release
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+To build a release bundle for Linux:
+```bash
+flutter build linux
+```
+The compiled executable and assets will be placed inside `build/linux/x64/release/bundle/`.
