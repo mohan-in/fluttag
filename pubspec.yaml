@@ -1,0 +1,22 @@
+name: fluttag
+description: "ID3 Tag Editor for audio files"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  id3_codec: ^1.0.3
+  provider: ^6.1.2
+  file_picker: ^8.3.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
