@@ -1,8 +1,9 @@
+import 'dart:async';
+
+import 'package:fluttag/models/folder_node.dart';
+import 'package:fluttag/notifiers/folder_tree_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import 'package:fluttag/domain/folder_node.dart';
-import 'package:fluttag/notifiers/folder_tree_notifier.dart';
 
 /// Left pane: displays the folder tree for navigation.
 class FolderTreePane extends StatelessWidget {
@@ -151,7 +152,7 @@ class _FolderTreeHeader extends StatelessWidget {
             icon: const Icon(Icons.folder_open, size: 18),
             tooltip: 'Change root folder',
             onPressed: () {
-              context.read<FolderTreeNotifier>().selectRootFolder();
+              unawaited(context.read<FolderTreeNotifier>().selectRootFolder());
             },
             visualDensity: VisualDensity.compact,
           ),

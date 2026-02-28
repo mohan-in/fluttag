@@ -1,8 +1,7 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:fluttag/models/folder_node.dart';
+import 'package:fluttag/repositories/file_system_repository.dart';
 import 'package:flutter/material.dart';
-
-import 'package:fluttag/data/file_system_repository.dart';
-import 'package:fluttag/domain/folder_node.dart';
 
 /// Manages the folder tree state and current folder selection.
 class FolderTreeNotifier extends ChangeNotifier {

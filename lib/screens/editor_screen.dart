@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:async';
 
 import 'package:fluttag/notifiers/audio_file_list_notifier.dart';
 import 'package:fluttag/notifiers/column_settings_notifier.dart';
 import 'package:fluttag/notifiers/folder_tree_notifier.dart';
+import 'package:fluttag/notifiers/tag_editor_notifier.dart';
 import 'package:fluttag/widgets/audio_file_list_pane.dart';
 import 'package:fluttag/widgets/folder_tree_pane.dart';
 import 'package:fluttag/widgets/tag_editor_pane.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// 3-pane editor screen: folder tree, file list, tag editor.
 class EditorScreen extends StatefulWidget {
@@ -29,7 +31,9 @@ class _EditorScreenState extends State<EditorScreen> {
       final selectedPath = folderNotifier.selectedPath;
       if (selectedPath != null) {
         _lastLoadedFolder = selectedPath;
-        context.read<AudioFileListNotifier>().loadFiles(selectedPath);
+        unawaited(
+          context.read<AudioFileListNotifier>().loadFiles(selectedPath),
+        );
       }
     });
   }
@@ -52,7 +56,9 @@ class _EditorScreenState extends State<EditorScreen> {
       _lastLoadedFolder = selectedFolder;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          context.read<AudioFileListNotifier>().loadFiles(selectedFolder);
+          unawaited(
+            context.read<AudioFileListNotifier>().loadFiles(selectedFolder),
+          );
         }
       });
     }
@@ -66,7 +72,7 @@ class _EditorScreenState extends State<EditorScreen> {
             const Text('Fluttag'),
           ],
         ),
-        actions: [_ColumnMenuButton()],
+        actions: [_CopyFilenameToTitleButton(), _ColumnMenuButton()],
       ),
       body: Row(
         children: [
@@ -120,6 +126,40 @@ class _ColumnMenuButton extends StatelessWidget {
           );
         }).toList();
       },
+    );
+  }
+}
+
+class _CopyFilenameToTitleButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final tagNotifier = context.watch<TagEditorNotifier>();
+    final hasFiles = tagNotifier.editingFiles.isNotEmpty;
+
+    return IconButton(
+      icon: const Icon(Icons.drive_file_rename_outline),
+      tooltip: 'Copy filename to title (all selected)',
+      onPressed: hasFiles
+          ? () {
+              for (final file in tagNotifier.editingFiles) {
+                final name = file.fileName.contains('.')
+                    ? file.fileName.substring(0, file.fileName.lastIndexOf('.'))
+                    : file.fileName;
+                file.title = name;
+              }
+              tagNotifier.notifyManually();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Copied filename → title for '
+                    '${tagNotifier.editingFiles.length} file(s)',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          : null,
     );
   }
 }

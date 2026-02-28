@@ -9,7 +9,8 @@ enum FileColumn {
   genre('Genre'),
   track('Track'),
   comment('Comment'),
-  fileSize('File Size');
+  fileSize('File Size')
+  ;
 
   const FileColumn(this.label);
   final String label;
@@ -21,9 +22,9 @@ class ColumnSettingsNotifier extends ChangeNotifier {
     FileColumn.title: true,
     FileColumn.artist: true,
     FileColumn.album: true,
-    FileColumn.year: true,
-    FileColumn.genre: false,
-    FileColumn.track: false,
+    FileColumn.year: false,
+    FileColumn.genre: true,
+    FileColumn.track: true,
     FileColumn.comment: false,
     FileColumn.fileSize: false,
   };
@@ -46,7 +47,7 @@ class ColumnSettingsNotifier extends ChangeNotifier {
 
   /// Returns only the visible columns in enum order.
   List<FileColumn> get visibleColumns =>
-      FileColumn.values.where((c) => _visibility[c] == true).toList();
+      FileColumn.values.where((c) => _visibility[c] ?? false).toList();
 
   /// Returns the width for a given column.
   double columnWidth(FileColumn column) {
@@ -59,7 +60,11 @@ class ColumnSettingsNotifier extends ChangeNotifier {
         return _defaultNarrowWidth;
       case FileColumn.fileSize:
         return 100;
-      default:
+      case FileColumn.title:
+      case FileColumn.artist:
+      case FileColumn.album:
+      case FileColumn.genre:
+      case FileColumn.comment:
         return _defaultWideWidth;
     }
   }

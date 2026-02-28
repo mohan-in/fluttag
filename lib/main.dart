@@ -1,13 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'package:fluttag/data/file_system_repository.dart';
-import 'package:fluttag/data/id3_repository.dart';
 import 'package:fluttag/notifiers/audio_file_list_notifier.dart';
 import 'package:fluttag/notifiers/column_settings_notifier.dart';
 import 'package:fluttag/notifiers/folder_tree_notifier.dart';
 import 'package:fluttag/notifiers/tag_editor_notifier.dart';
+import 'package:fluttag/repositories/file_system_repository.dart';
+import 'package:fluttag/repositories/id3_repository.dart';
 import 'package:fluttag/screens/home_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const FluttagApp());
@@ -39,7 +38,7 @@ class FluttagApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ColumnSettingsNotifier()),
       ],
       child: MaterialApp(
-        title: 'Fluttag',
+        title: 'fluttag',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorSchemeSeed: Colors.teal,

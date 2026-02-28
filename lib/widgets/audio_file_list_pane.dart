@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'package:fluttag/domain/audio_file.dart';
+import 'package:fluttag/models/audio_file.dart';
 import 'package:fluttag/notifiers/audio_file_list_notifier.dart';
 import 'package:fluttag/notifiers/column_settings_notifier.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// Middle pane: displays the list of audio files with resizable columns.
 class AudioFileListPane extends StatefulWidget {
@@ -88,6 +87,7 @@ class _AudioFileListPaneState extends State<AudioFileListPane> {
                             allSelected: allSelected,
                             visibleColumns: visibleColumns,
                             columnNotifier: columnNotifier,
+                            fileNotifier: fileNotifier,
                             onSelectAll: () {
                               if (allSelected) {
                                 fileNotifier.clearSelection();
@@ -183,12 +183,14 @@ class _ResizableHeaderRow extends StatelessWidget {
     required this.allSelected,
     required this.visibleColumns,
     required this.columnNotifier,
+    required this.fileNotifier,
     required this.onSelectAll,
   });
 
   final bool allSelected;
   final List<FileColumn> visibleColumns;
   final ColumnSettingsNotifier columnNotifier;
+  final AudioFileListNotifier fileNotifier;
   final VoidCallback onSelectAll;
 
   @override
@@ -218,26 +220,44 @@ class _ResizableHeaderRow extends StatelessWidget {
           // File name column + divider.
           SizedBox(
             width: columnNotifier.fileNameWidth,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('File Name', style: headerStyle),
+            child: InkWell(
+              onTap: fileNotifier.sortByFileNameColumn,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    Text('File Name', style: headerStyle),
+                    if (fileNotifier.sortByFileName)
+                      _SortArrow(ascending: fileNotifier.sortAscending),
+                  ],
+                ),
               ),
             ),
           ),
           _ColumnDivider(
-            onDrag: (delta) => columnNotifier.resizeFileNameColumn(delta),
+            onDrag: columnNotifier.resizeFileNameColumn,
           ),
           // Dynamic visible columns.
           for (final column in visibleColumns) ...[
             SizedBox(
               width: columnNotifier.columnWidth(column),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(column.label, style: headerStyle),
+              child: InkWell(
+                onTap: () => fileNotifier.sortByColumn(column),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          column.label,
+                          style: headerStyle,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (fileNotifier.sortFileColumn == column)
+                        _SortArrow(ascending: fileNotifier.sortAscending),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -251,16 +271,35 @@ class _ResizableHeaderRow extends StatelessWidget {
   }
 }
 
+/// Small sort direction arrow indicator.
+class _SortArrow extends StatelessWidget {
+  const _SortArrow({required this.ascending});
+
+  final bool ascending;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Icon(
+        ascending ? Icons.arrow_upward : Icons.arrow_downward,
+        size: 14,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+}
+
 /// A single file data row matching the header widths.
 class _FileRow extends StatelessWidget {
   const _FileRow({
-    super.key,
     required this.index,
     required this.file,
     required this.isSelected,
     required this.visibleColumns,
     required this.columnNotifier,
     required this.onToggle,
+    super.key,
   });
 
   final int index;

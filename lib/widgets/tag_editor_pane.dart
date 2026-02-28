@@ -1,12 +1,10 @@
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:fluttag/notifiers/audio_file_list_notifier.dart';
 import 'package:fluttag/notifiers/tag_editor_notifier.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// Right pane: displays and edits ID3 tag fields for selected files.
 class TagEditorPane extends StatefulWidget {
@@ -25,8 +23,8 @@ class _TagEditorPaneState extends State<TagEditorPane> {
   final _trackController = TextEditingController();
   final _commentController = TextEditingController();
 
-  AudioFileListNotifier? _fileListNotifier;
-  TagEditorNotifier? _tagNotifier;
+  late AudioFileListNotifier _fileListNotifier;
+  late TagEditorNotifier _tagNotifier;
 
   /// Tracks which file paths are currently loaded in the editor.
   Set<String> _loadedPaths = {};
@@ -37,17 +35,22 @@ class _TagEditorPaneState extends State<TagEditorPane> {
     final newFileListNotifier = context.read<AudioFileListNotifier>();
     final newTagNotifier = context.read<TagEditorNotifier>();
 
-    if (_fileListNotifier != newFileListNotifier) {
-      _fileListNotifier?.removeListener(_onSelectionChanged);
+    if (_loadedPaths.isEmpty ||
+        _fileListNotifier != newFileListNotifier ||
+        _tagNotifier != newTagNotifier) {
+      if (_loadedPaths.isNotEmpty) {
+        _fileListNotifier.removeListener(_onSelectionChanged);
+      }
       _fileListNotifier = newFileListNotifier;
       _tagNotifier = newTagNotifier;
-      _fileListNotifier!.addListener(_onSelectionChanged);
+      _fileListNotifier.addListener(_onSelectionChanged);
+      _onSelectionChanged();
     }
   }
 
   @override
   void dispose() {
-    _fileListNotifier?.removeListener(_onSelectionChanged);
+    _fileListNotifier.removeListener(_onSelectionChanged);
     _titleController.dispose();
     _artistController.dispose();
     _albumController.dispose();
@@ -60,34 +63,15 @@ class _TagEditorPaneState extends State<TagEditorPane> {
 
   /// Runs outside of build when AudioFileListNotifier changes.
   void _onSelectionChanged() {
-    final selectedPaths = _fileListNotifier!.selectedPaths;
-    developer.log(
-      'onSelectionChanged: selectedPaths=$selectedPaths, '
-      'loadedPaths=$_loadedPaths',
-      name: 'TagEditorPane',
-    );
+    final selectedPaths = _fileListNotifier.selectedPaths;
     if (!_setsEqual(selectedPaths, _loadedPaths)) {
       _loadedPaths = Set<String>.of(selectedPaths);
-      final selectedFiles = _fileListNotifier!.selectedFiles;
-      developer.log(
-        'Selection changed! selectedFiles.length=${selectedFiles.length}',
-        name: 'TagEditorPane',
-      );
+      final selectedFiles = _fileListNotifier.selectedFiles;
       if (selectedFiles.isEmpty) {
-        _tagNotifier!.clear();
+        _tagNotifier.clear();
       } else {
-        _tagNotifier!.loadSelectedFiles(selectedFiles);
-        developer.log(
-          'After loadSelectedFiles: editingFiles.length='
-          '${_tagNotifier!.editingFiles.length}, '
-          'title=${_tagNotifier!.editingFiles.first.title}',
-          name: 'TagEditorPane',
-        );
-        _populateControllers(_tagNotifier!);
-        developer.log(
-          'After populateControllers: titleCtrl=${_titleController.text}',
-          name: 'TagEditorPane',
-        );
+        _tagNotifier.loadSelectedFiles(selectedFiles);
+        _populateControllers(_tagNotifier);
       }
     }
   }
@@ -129,23 +113,26 @@ class _TagEditorPaneState extends State<TagEditorPane> {
   Future<void> _handleSave() async {
     final tagNotifier = context.read<TagEditorNotifier>();
     final fileListNotifier = context.read<AudioFileListNotifier>();
+    final isMultiple = tagNotifier.editingFiles.length > 1;
 
     // Apply current controller values before saving.
+    // For multi-select, only update common fields.
+    if (!isMultiple) {
+      tagNotifier
+        ..updateTitle(_titleController.text)
+        ..updateTrack(_trackController.text)
+        ..updateComment(_commentController.text);
+    }
     tagNotifier
-      ..updateTitle(_titleController.text)
       ..updateArtist(_artistController.text)
       ..updateAlbum(_albumController.text)
       ..updateYear(_yearController.text)
-      ..updateGenre(_genreController.text)
-      ..updateTrack(_trackController.text)
-      ..updateComment(_commentController.text);
+      ..updateGenre(_genreController.text);
 
     final saved = await tagNotifier.saveAll();
 
     if (saved != null && mounted) {
-      for (final updated in saved) {
-        fileListNotifier.updateFile(updated);
-      }
+      saved.forEach(fileListNotifier.updateFile);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -160,11 +147,6 @@ class _TagEditorPaneState extends State<TagEditorPane> {
   Widget build(BuildContext context) {
     final tagNotifier = context.watch<TagEditorNotifier>();
     final theme = Theme.of(context);
-
-    developer.log(
-      'build: editingFiles.length=${tagNotifier.editingFiles.length}',
-      name: 'TagEditorPane',
-    );
 
     if (tagNotifier.editingFiles.isEmpty) {
       return Center(
@@ -244,13 +226,17 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Per-file fields — disabled when multiple files selected.
               _TagField(
                 label: 'Title',
                 controller: _titleController,
+                enabled: !isMultiple,
+                helperText: isMultiple ? 'Per-file field' : null,
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.title ?? '') == null,
               ),
+              // Common fields — always enabled.
               _TagField(
                 label: 'Artist',
                 controller: _artistController,
@@ -272,16 +258,18 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.year ?? '') == null,
               ),
-              _TagField(
-                label: 'Genre',
+              _GenreDropdown(
                 controller: _genreController,
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.genre ?? '') == null,
               ),
+              // Per-file fields — disabled when multiple files selected.
               _TagField(
                 label: 'Track',
                 controller: _trackController,
+                enabled: !isMultiple,
+                helperText: isMultiple ? 'Per-file field' : null,
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.track ?? '') == null,
@@ -290,6 +278,8 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                 label: 'Comment',
                 controller: _commentController,
                 maxLines: 3,
+                enabled: !isMultiple,
+                helperText: isMultiple ? 'Per-file field' : null,
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.comment ?? '') == null,
@@ -334,10 +324,13 @@ class _TagEditorHeader extends StatelessWidget {
         children: [
           Icon(Icons.edit, size: 18, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
-          Text(
-            isMultiple ? 'Editing $fileCount files' : 'Tag Editor',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              isMultiple ? 'Editing $fileCount files' : 'Tag Editor',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -352,12 +345,16 @@ class _TagField extends StatelessWidget {
     required this.controller,
     this.maxLines = 1,
     this.isMixed = false,
+    this.enabled = true,
+    this.helperText,
   });
 
   final String label;
   final TextEditingController controller;
   final int maxLines;
   final bool isMixed;
+  final bool enabled;
+  final String? helperText;
 
   @override
   Widget build(BuildContext context) {
@@ -366,12 +363,138 @@ class _TagField extends StatelessWidget {
       child: TextField(
         controller: controller,
         maxLines: maxLines,
+        enabled: enabled,
         decoration: InputDecoration(
           labelText: label,
           hintText: isMixed ? '(Multiple values)' : null,
+          helperText: helperText,
           border: const OutlineInputBorder(),
           isDense: true,
         ),
+      ),
+    );
+  }
+}
+
+/// Genre field with autocomplete dropdown of standard ID3 genres.
+class _GenreDropdown extends StatelessWidget {
+  const _GenreDropdown({required this.controller, this.isMixed = false});
+
+  final TextEditingController controller;
+  final bool isMixed;
+
+  static const List<String> _genres = [
+    'Acoustic',
+    'Alternative',
+    'Ambient',
+    'Audiobook',
+    'Blues',
+    'Classical',
+    'Comedy',
+    'Country',
+    'Dance',
+    'Disco',
+    'Drama',
+    'Drum & Bass',
+    'Electronic',
+    'Folk',
+    'Funk',
+    'Gospel',
+    'Grunge',
+    'Hip-Hop',
+    'House',
+    'Indie',
+    'Jazz',
+    'K-Pop',
+    'Latin',
+    'Lo-Fi',
+    'Metal',
+    'New Age',
+    'Opera',
+    'Other',
+    'Podcast',
+    'Pop',
+    'Punk',
+    'R&B',
+    'Rap',
+    'Reggae',
+    'Rock',
+    'Soul',
+    'Soundtrack',
+    'Techno',
+    'Trance',
+    'World',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Autocomplete<String>(
+            initialValue: controller.value,
+            optionsBuilder: (textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return _genres;
+              }
+              final query = textEditingValue.text.toLowerCase();
+              return _genres.where((g) => g.toLowerCase().contains(query));
+            },
+            onSelected: (value) {
+              controller.text = value;
+            },
+            fieldViewBuilder:
+                (context, fieldController, focusNode, onFieldSubmitted) {
+                  // Sync the external controller when the field changes.
+                  fieldController.addListener(() {
+                    if (controller.text != fieldController.text) {
+                      controller.text = fieldController.text;
+                    }
+                  });
+
+                  return TextField(
+                    controller: fieldController,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      labelText: 'Genre',
+                      hintText: isMixed ? '(Multiple values)' : null,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      suffixIcon: const Icon(Icons.arrow_drop_down, size: 20),
+                    ),
+                  );
+                },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: 200,
+                      maxWidth: constraints.maxWidth,
+                    ),
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final option = options.elementAt(index);
+                        return ListTile(
+                          dense: true,
+                          title: Text(option),
+                          onTap: () => onSelected(option),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

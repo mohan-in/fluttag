@@ -1,10 +1,9 @@
 import 'dart:developer' as developer;
 import 'dart:typed_data';
 
+import 'package:fluttag/models/audio_file.dart';
+import 'package:fluttag/repositories/id3_repository.dart';
 import 'package:flutter/material.dart';
-
-import 'package:fluttag/data/id3_repository.dart';
-import 'package:fluttag/domain/audio_file.dart';
 
 /// Manages tag editing state, including batch editing for multiple files.
 class TagEditorNotifier extends ChangeNotifier {
@@ -133,7 +132,7 @@ class TagEditorNotifier extends ChangeNotifier {
       }
 
       // Re-read tags to confirm the save.
-      final List<AudioFile> refreshed = [];
+      final refreshed = <AudioFile>[];
       for (final file in _editingFiles) {
         final updated = await _id3Repository.readTags(file.path);
         refreshed.add(updated);
@@ -150,5 +149,11 @@ class TagEditorNotifier extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+  }
+
+  /// Notifies listeners manually after external modifications to editing files.
+  void notifyManually() {
+    _hasChanges = true;
+    notifyListeners();
   }
 }

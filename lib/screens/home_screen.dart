@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:fluttag/notifiers/folder_tree_notifier.dart';
 import 'package:fluttag/screens/editor_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// Landing screen shown at app launch with a prominent folder selection button.
 class HomeScreen extends StatelessWidget {
