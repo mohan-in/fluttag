@@ -75,7 +75,11 @@ class _EditorScreenState extends State<EditorScreen> {
             const Text('Fluttag'),
           ],
         ),
-        actions: [_CopyFilenameToTitleButton(), _ColumnMenuButton()],
+        actions: [
+          _AutoNumberButton(),
+          _CopyFilenameToTitleButton(),
+          _ColumnMenuButton(),
+        ],
       ),
       body: Row(
         children: [
@@ -143,6 +147,33 @@ class _ColumnMenuButton extends StatelessWidget {
           );
         }).toList();
       },
+    );
+  }
+}
+
+class _AutoNumberButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final tagNotifier = context.watch<TagEditorNotifier>();
+    final isMultiple = tagNotifier.editingFiles.length > 1;
+
+    return IconButton(
+      icon: const Icon(Icons.format_list_numbered),
+      tooltip: 'Auto-Number Tracks',
+      onPressed: isMultiple
+          ? () {
+              context.read<TagEditorNotifier>().autoNumberTracks();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Auto-numbered tracks for '
+                    '${tagNotifier.editingFiles.length} file(s)',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          : null,
     );
   }
 }

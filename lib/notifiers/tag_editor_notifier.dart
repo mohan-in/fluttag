@@ -115,6 +115,15 @@ class TagEditorNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Automatically assigns track numbers 1 through N to the currently selected files.
+  void autoNumberTracks() {
+    for (int i = 0; i < _editingFiles.length; i++) {
+      _editingFiles[i].track = (i + 1).toString();
+    }
+    _hasChanges = true;
+    notifyListeners();
+  }
+
   /// Saves all editing files back to disk.
   ///
   /// Returns the list of updated [AudioFile] objects on success.
