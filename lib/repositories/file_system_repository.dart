@@ -57,11 +57,13 @@ class FileSystemRepository {
 
       for (final entity in entities) {
         if (entity is File) {
-          final extension = entity.path
-              .substring(entity.path.lastIndexOf('.'))
-              .toLowerCase();
-          if (_audioExtensions.contains(extension)) {
-            audioPaths.add(entity.path);
+          final name = entity.path.split(Platform.pathSeparator).last;
+          final lastDotIndex = name.lastIndexOf('.');
+          if (lastDotIndex != -1) {
+            final extension = name.substring(lastDotIndex).toLowerCase();
+            if (_audioExtensions.contains(extension)) {
+              audioPaths.add(entity.path);
+            }
           }
         }
       }

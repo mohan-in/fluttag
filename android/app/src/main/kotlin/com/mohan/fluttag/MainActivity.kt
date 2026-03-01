@@ -1,4 +1,4 @@
-package com.example.fluttag
+package com.mohan.fluttag
 
 import io.flutter.embedding.android.FlutterActivity
 

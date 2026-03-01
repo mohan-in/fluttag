@@ -6,8 +6,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 /// Left pane: displays the folder tree for navigation.
-class FolderTreePane extends StatelessWidget {
+class FolderTreePane extends StatefulWidget {
   const FolderTreePane({super.key});
+
+  @override
+  State<FolderTreePane> createState() => _FolderTreePaneState();
+}
+
+class _FolderTreePaneState extends State<FolderTreePane> {
+  final ScrollController _verticalController = ScrollController();
+  final ScrollController _horizontalController = ScrollController();
+
+  @override
+  void dispose() {
+    _verticalController.dispose();
+    _horizontalController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +56,35 @@ class FolderTreePane extends StatelessWidget {
         _FolderTreeHeader(rootPath: notifier.rootNode!.name),
         const Divider(height: 1),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            children: [_buildNode(context, notifier.rootNode!, 0)],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Scrollbar(
+                controller: _horizontalController,
+                thumbVisibility: true,
+                child: Scrollbar(
+                  controller: _verticalController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _horizontalController,
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                      ),
+                      child: IntrinsicWidth(
+                        child: SingleChildScrollView(
+                          controller: _verticalController,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: _buildNode(context, notifier.rootNode!, 0),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],
@@ -96,18 +137,15 @@ class FolderTreePane extends StatelessWidget {
                         : theme.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      node.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                        color: isSelected
-                            ? theme.colorScheme.onPrimaryContainer
-                            : null,
-                      ),
+                  Text(
+                    node.name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimaryContainer
+                          : null,
                     ),
                   ),
                 ],

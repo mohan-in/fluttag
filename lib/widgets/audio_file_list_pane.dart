@@ -14,10 +14,12 @@ class AudioFileListPane extends StatefulWidget {
 
 class _AudioFileListPaneState extends State<AudioFileListPane> {
   final ScrollController _horizontalController = ScrollController();
+  final ScrollController _verticalController = ScrollController();
 
   @override
   void dispose() {
     _horizontalController.dispose();
+    _verticalController.dispose();
     super.dispose();
   }
 
@@ -71,57 +73,64 @@ class _AudioFileListPaneState extends State<AudioFileListPane> {
               return Scrollbar(
                 controller: _horizontalController,
                 thumbVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _horizontalController,
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                    child: SizedBox(
-                      width: totalRowWidth < constraints.maxWidth
-                          ? constraints.maxWidth
-                          : totalRowWidth,
-                      child: Column(
-                        children: [
-                          // Header row.
-                          _ResizableHeaderRow(
-                            allSelected: allSelected,
-                            visibleColumns: visibleColumns,
-                            columnNotifier: columnNotifier,
-                            fileNotifier: fileNotifier,
-                            onSelectAll: () {
-                              if (allSelected) {
-                                fileNotifier.clearSelection();
-                              } else {
-                                fileNotifier.selectAll();
-                              }
-                            },
-                          ),
-                          const Divider(height: 1),
-                          // Data rows (reorderable).
-                          Expanded(
-                            child: ReorderableListView.builder(
-                              buildDefaultDragHandles: false,
-                              onReorder: fileNotifier.reorderFile,
-                              itemCount: fileNotifier.files.length,
-                              itemExtent: 36,
-                              itemBuilder: (context, index) {
-                                final file = fileNotifier.files[index];
-                                final isSelected = fileNotifier.selectedPaths
-                                    .contains(file.path);
-                                return _FileRow(
-                                  key: ValueKey(file.path),
-                                  index: index,
-                                  file: file,
-                                  isSelected: isSelected,
-                                  visibleColumns: visibleColumns,
-                                  columnNotifier: columnNotifier,
-                                  onToggle: () =>
-                                      fileNotifier.toggleSelection(file.path),
-                                );
+                child: Scrollbar(
+                  controller: _verticalController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _horizontalController,
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                      ),
+                      child: SizedBox(
+                        width: totalRowWidth < constraints.maxWidth
+                            ? constraints.maxWidth
+                            : totalRowWidth,
+                        child: Column(
+                          children: [
+                            // Header row.
+                            _ResizableHeaderRow(
+                              allSelected: allSelected,
+                              visibleColumns: visibleColumns,
+                              columnNotifier: columnNotifier,
+                              fileNotifier: fileNotifier,
+                              onSelectAll: () {
+                                if (allSelected) {
+                                  fileNotifier.clearSelection();
+                                } else {
+                                  fileNotifier.selectAll();
+                                }
                               },
                             ),
-                          ),
-                        ],
+                            const Divider(height: 1),
+                            // Data rows (reorderable).
+                            Expanded(
+                              child: ReorderableListView.builder(
+                                scrollController: _verticalController,
+                                buildDefaultDragHandles: false,
+                                onReorder: fileNotifier.reorderFile,
+                                itemCount: fileNotifier.files.length,
+                                itemExtent: 36,
+                                itemBuilder: (context, index) {
+                                  final file = fileNotifier.files[index];
+                                  final isSelected = fileNotifier.selectedPaths
+                                      .contains(file.path);
+                                  return _FileRow(
+                                    key: ValueKey(file.path),
+                                    index: index,
+                                    file: file,
+                                    isSelected: isSelected,
+                                    visibleColumns: visibleColumns,
+                                    columnNotifier: columnNotifier,
+                                    onToggle: () =>
+                                        fileNotifier.toggleSelection(file.path),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

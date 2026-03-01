@@ -22,6 +22,9 @@ class _EditorScreenState extends State<EditorScreen> {
   /// Tracks the last folder path we loaded files for.
   String? _lastLoadedFolder;
 
+  /// Width of the left pane (folder tree).
+  double _leftPaneWidth = 250;
+
   @override
   void initState() {
     super.initState();
@@ -78,14 +81,28 @@ class _EditorScreenState extends State<EditorScreen> {
         children: [
           // Left pane: Folder tree.
           SizedBox(
-            width: 250,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(
-                  right: BorderSide(color: theme.colorScheme.outlineVariant),
+            width: _leftPaneWidth,
+            child: const FolderTreePane(),
+          ),
+          // Resizer divider
+          MouseRegion(
+            cursor: SystemMouseCursors.resizeColumn,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _leftPaneWidth += details.delta.dx;
+                  _leftPaneWidth = _leftPaneWidth.clamp(150.0, 600.0);
+                });
+              },
+              child: Container(
+                width: 8,
+                decoration: BoxDecoration(
+                  border: Border(
+                    right: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
                 ),
               ),
-              child: const FolderTreePane(),
             ),
           ),
           // Middle pane: File list.
