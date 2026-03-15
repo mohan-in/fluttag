@@ -118,20 +118,34 @@ class _TagEditorPaneState extends State<TagEditorPane> {
     // Apply current controller values before saving.
     // For multi-select, only update common fields.
     if (!isMultiple) {
-      tagNotifier
-        ..updateTitle(_titleController.text)
-        ..updateTrack(_trackController.text)
-        ..updateComment(_commentController.text);
+      tagNotifier.updateTrack(_trackController.text);
     }
     tagNotifier
+      ..updateTitle(_titleController.text)
       ..updateArtist(_artistController.text)
       ..updateAlbum(_albumController.text)
       ..updateYear(_yearController.text)
-      ..updateGenre(_genreController.text);
+      ..updateGenre(_genreController.text)
+      ..updateComment(_commentController.text);
 
     final saved = await tagNotifier.saveAll();
 
-    if (saved != null && mounted) {
+    if (!mounted) {
+      return;
+    }
+
+    if (saved == null && tagNotifier.duplicateTitleError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tagNotifier.duplicateTitleError!),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    if (saved != null) {
       saved.forEach(fileListNotifier.updateFile);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -226,15 +240,14 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Per-file fields — disabled when multiple files selected.
+              // Title — always editable, use %filename% for per-file titles.
               _TagField(
                 label: 'Title',
                 controller: _titleController,
-                enabled: !isMultiple,
-                helperText: isMultiple ? 'Per-file field' : null,
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.title ?? '') == null,
+                onChanged: tagNotifier.updateTitle,
               ),
               // Common fields — always enabled.
               _TagField(
@@ -243,6 +256,7 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.artist ?? '') == null,
+                onChanged: tagNotifier.updateArtist,
               ),
               _TagField(
                 label: 'Album',
@@ -250,6 +264,7 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.album ?? '') == null,
+                onChanged: tagNotifier.updateAlbum,
               ),
               _TagField(
                 label: 'Year',
@@ -257,12 +272,14 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.year ?? '') == null,
+                onChanged: tagNotifier.updateYear,
               ),
               _GenreDropdown(
                 controller: _genreController,
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.genre ?? '') == null,
+                onChanged: tagNotifier.updateGenre,
               ),
               // Per-file fields — disabled when multiple files selected.
               _TagField(
@@ -273,16 +290,16 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.track ?? '') == null,
+                onChanged: !isMultiple ? tagNotifier.updateTrack : null,
               ),
               _TagField(
                 label: 'Comment',
                 controller: _commentController,
                 maxLines: 3,
-                enabled: !isMultiple,
-                helperText: isMultiple ? 'Per-file field' : null,
                 isMixed:
                     isMultiple &&
                     tagNotifier.getCommonValue((f) => f.comment ?? '') == null,
+                onChanged: tagNotifier.updateComment,
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
@@ -291,13 +308,16 @@ class _TagEditorPaneState extends State<TagEditorPane> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
                       )
                     : const Icon(Icons.save),
                 label: Text(
                   tagNotifier.isSaving
                       ? 'Saving...'
-                      : 'Save ${tagNotifier.editingFiles.length} file(s)',
+                      : 'Save ${tagNotifier.modifiedFilesCount}'
+                            ' file(s)',
                 ),
               ),
             ],
@@ -347,6 +367,7 @@ class _TagField extends StatelessWidget {
     this.isMixed = false,
     this.enabled = true,
     this.helperText,
+    this.onChanged,
   });
 
   final String label;
@@ -355,6 +376,7 @@ class _TagField extends StatelessWidget {
   final bool isMixed;
   final bool enabled;
   final String? helperText;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -364,6 +386,7 @@ class _TagField extends StatelessWidget {
         controller: controller,
         maxLines: maxLines,
         enabled: enabled,
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
           hintText: isMixed ? '(Multiple values)' : null,
@@ -378,10 +401,15 @@ class _TagField extends StatelessWidget {
 
 /// Genre field with autocomplete dropdown of standard ID3 genres.
 class _GenreDropdown extends StatelessWidget {
-  const _GenreDropdown({required this.controller, this.isMixed = false});
+  const _GenreDropdown({
+    required this.controller,
+    this.isMixed = false,
+    this.onChanged,
+  });
 
   final TextEditingController controller;
   final bool isMixed;
+  final ValueChanged<String>? onChanged;
 
   static const List<String> _genres = [
     'Acoustic',
@@ -443,6 +471,7 @@ class _GenreDropdown extends StatelessWidget {
             },
             onSelected: (value) {
               controller.text = value;
+              onChanged?.call(value);
             },
             fieldViewBuilder:
                 (context, fieldController, focusNode, onFieldSubmitted) {
@@ -450,6 +479,7 @@ class _GenreDropdown extends StatelessWidget {
                   fieldController.addListener(() {
                     if (controller.text != fieldController.text) {
                       controller.text = fieldController.text;
+                      onChanged?.call(fieldController.text);
                     }
                   });
 

@@ -1,6 +1,7 @@
 import 'package:fluttag/models/audio_file.dart';
 import 'package:fluttag/notifiers/audio_file_list_notifier.dart';
 import 'package:fluttag/notifiers/column_settings_notifier.dart';
+import 'package:fluttag/notifiers/tag_editor_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -321,6 +322,10 @@ class _FileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tagNotifier = context.watch<TagEditorNotifier>();
+
+    final isUnsaved = tagNotifier.isModified(file.path);
+    final displayFile = tagNotifier.getDraft(file.path) ?? file;
 
     return Material(
       color: isSelected
@@ -362,10 +367,27 @@ class _FileRow extends StatelessWidget {
                 width: columnNotifier.fileNameWidth,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    file.fileName,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          displayFile.fileName,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontStyle: isUnsaved ? FontStyle.italic : null,
+                            fontWeight: isUnsaved ? FontWeight.w600 : null,
+                          ),
+                        ),
+                      ),
+                      if (isUnsaved) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.circle,
+                          size: 8,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
@@ -378,7 +400,7 @@ class _FileRow extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
-                      _getCellValue(column),
+                      _getCellValue(displayFile, column),
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium,
                     ),
@@ -393,24 +415,24 @@ class _FileRow extends StatelessWidget {
     );
   }
 
-  String _getCellValue(FileColumn column) {
+  String _getCellValue(AudioFile displayFile, FileColumn column) {
     switch (column) {
       case FileColumn.title:
-        return file.title ?? '';
+        return displayFile.title ?? '';
       case FileColumn.artist:
-        return file.artist ?? '';
+        return displayFile.artist ?? '';
       case FileColumn.album:
-        return file.album ?? '';
+        return displayFile.album ?? '';
       case FileColumn.year:
-        return file.year ?? '';
+        return displayFile.year ?? '';
       case FileColumn.genre:
-        return file.genre ?? '';
+        return displayFile.genre ?? '';
       case FileColumn.track:
-        return file.track ?? '';
+        return displayFile.track ?? '';
       case FileColumn.comment:
-        return file.comment ?? '';
+        return displayFile.comment ?? '';
       case FileColumn.fileSize:
-        return file.formattedSize;
+        return displayFile.formattedSize;
     }
   }
 }

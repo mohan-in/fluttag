@@ -1,8 +1,7 @@
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:fluttag/models/folder_node.dart';
 import 'package:fluttag/repositories/file_system_repository.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Manages the folder tree state and current folder selection.

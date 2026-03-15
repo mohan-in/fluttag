@@ -7,8 +7,8 @@ A sleek, intuitive desktop application for Linux built with Flutter, designed to
 ## Features
 
 - **Split-Pane Interface**: Easily navigate your local file system, view your audio files in a comprehensive list, and edit tags in a dedicated side pane.
-- **Batch Editing**: Select multiple audio files at once to quickly apply common tags (such as Artist, Album, Year, Genre, and Album Art) everywhere simultaneously.
-- **Robust Tagging**: Read and write ID3 metadata seamlessly using the `audiotags` package. Supports altering:
+- **Batch Editing & Field Templates**: Select multiple files to apply common tags simultaneously. Use tokens like `%artist%` or `%album%` to dynamically construct values using the field values of the file being edited.
+- **Robust Tagging & Auto-Numbering**: Read and write ID3 metadata seamlessly using the `audiotags` package. Automatically generate dynamic titles or sequentially auto-number tracks. Supports altering:
   - Title
   - Artist
   - Album
@@ -17,8 +17,8 @@ A sleek, intuitive desktop application for Linux built with Flutter, designed to
   - Track
   - Comment
   - Album Cover Art (read/write picture bytes)
-- **Advanced File List**: Sort audio files by various property columns (Name, Track, Year, File Size, etc.) and easily resize columns.
-- **Modern Material 3 Design**: Clean typography, proper state indicators, and native system theming.
+- **Advanced File List**: Sort audio files by various property columns (Name, Track, Year, File Size, etc.), easily resize columns, and navigate large lists with scrollbars tailored for different screen sizes.
+- **Modern Material 3 Design**: Clean typography, proper state indicators, responsive "Large Screen Bouncer" guidance, and native system theming.
 
 ## Getting Started
 
