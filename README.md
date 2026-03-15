@@ -2,7 +2,7 @@
 
 A sleek, intuitive desktop application for Linux built with Flutter, designed to help you easily view and batch-edit ID3 tags for your audio files.
 
-![Fluttag](assets/app_icon.png)
+![Fluttag](assets/icon.png)
 
 ## Features
 
